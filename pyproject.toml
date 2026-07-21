@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "context-telephone-workshop"
+version = "0.1.0"
+description = "A context-engineering telephone workshop runner"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+web = [
+  "fastapi>=0.115,<1",
+  "uvicorn[standard]>=0.32,<1",
+]
+agent = [
+  "deepagents-code==0.1.44",
+]
+test = [
+  "httpx>=0.28,<1",
+  "pytest>=8.3,<9",
+]
+
+[project.scripts]
+context-workshop = "workshop_runner.__main__:main"
+context-workshop-cli = "workshop_runner.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["workshop_runner*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

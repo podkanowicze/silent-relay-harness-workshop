@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Context Telephone</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Context Telephone home">
+      <span class="brand-mark">CT</span>
+      <span><strong>Context Telephone</strong><small>Deep Agents workshop</small></span>
+    </a>
+    <div class="topbar-actions">
+      <span id="connectionBadge" class="status-dot">Connecting</span>
+      <span id="identityBadge" class="identity-badge" hidden></span>
+      <button id="logoutButton" class="button ghost small" type="button" hidden>Log out</button>
+    </div>
+  </header>
+
+  <main id="app" class="shell" aria-live="polite">
+    <section id="loginView" class="login-layout" hidden>
+      <div class="login-story">
+        <p class="eyebrow">One codebase. Twelve interpretations.</p>
+        <h1>Leave the next developer enough context to keep the product alive.</h1>
+        <p>Every prompt starts a fresh coding-agent session. Only the application files and your final reply travel onward.</p>
+        <div class="story-chain" aria-hidden="true">
+          <span>SPEC-0</span><i>→</i><span>Code</span><i>→</i><span>Reply</span><i>→</i><span>Drift?</span>
+        </div>
+      </div>
+      <form id="loginForm" class="panel login-panel">
+        <p class="panel-kicker">Join the workshop</p>
+        <h2>Your workshop nickname</h2>
+        <p class="muted">Use the same nickname to return to your server-side state.</p>
+        <label for="nicknameInput">Nickname</label>
+        <input id="nicknameInput" name="nickname" minlength="2" maxlength="32" autocomplete="nickname" required autofocus>
+        <button class="button primary full" type="submit">Enter workshop</button>
+        <p id="loginError" class="error-message" role="alert"></p>
+      </form>
+    </section>
+
+    <section id="lobbyView" class="center-state" hidden>
+      <div class="pulse-orbit" aria-hidden="true"><span></span></div>
+      <p class="eyebrow">Lobby</p>
+      <h1>Waiting for the ring to fill</h1>
+      <p id="lobbyCount" class="lead"></p>
+      <p class="muted">The host starts with the current roster. This screen updates automatically; the same nickname restores your place.</p>
+    </section>
+
+    <section id="waitingView" class="center-state" hidden>
+      <div class="handoff-animation" aria-hidden="true"><span></span><i></i><span></span></div>
+      <p class="eyebrow">Handoff complete</p>
+      <h1>Your files are with the next developer.</h1>
+      <p class="lead">Waiting for another application to reach you.</p>
+      <p id="queueMessage" class="muted"></p>
+    </section>
+
+    <section id="completeView" class="center-state" hidden>
+      <p class="eyebrow">Workshop complete</p>
+      <h1>The telephone stopped ringing.</h1>
+      <p class="lead">All implementation chains and author reviews are stored for the debrief.</p>
+    </section>
+
+    <section id="readyView" hidden>
+      <div class="work-header">
+        <div>
+          <p id="stationLabel" class="eyebrow"></p>
+          <h1 id="roundTitle">DELTA</h1>
+        </div>
+        <div class="work-meta">
+          <span id="routingBadge" class="chip"></span>
+          <span id="timer" class="timer">--:--</span>
+        </div>
+      </div>
+
+      <div class="workspace-grid">
+        <aside class="context-stack">
+          <section id="specCard" class="panel spec-card" hidden>
+            <div class="panel-heading">
+              <div><p class="panel-kicker">Author only</p><h2>SPEC-0</h2></div>
+              <span class="chip warning">Image</span>
+            </div>
+            <p class="muted compact">This product constitution is shown to you, not injected into the agent.</p>
+            <button id="specExpandButton" class="image-button" type="button" aria-label="Open SPEC-0 image">
+              <img id="specImage" alt="SPEC-0 product constitution">
+            </button>
+          </section>
+
+          <section class="panel task-card">
+            <div class="panel-heading">
+              <div><p class="panel-kicker">Current task</p><h2 id="deltaLabel">DELTA</h2></div>
+              <span class="chip required">Implement</span>
+            </div>
+            <p id="deltaText" class="task-text"></p>
+            <p class="context-note">The card is visible to you only. Translate the necessary context into your own prompt.</p>
+          </section>
+
+          <section class="panel file-card">
+            <div class="panel-heading">
+              <div><p class="panel-kicker">Allowed workspace</p><h2>Three files</h2></div>
+              <button id="viewCodeButton" class="button ghost small" type="button">View code</button>
+            </div>
+            <ul class="file-list">
+              <li><span>HTML</span><code>index.html</code></li>
+              <li><span>CSS</span><code>styles.css</code></li>
+              <li><span>JS</span><code>app.js</code></li>
+            </ul>
+          </section>
+        </aside>
+
+        <div class="agent-stack">
+          <section class="panel response-card">
+            <div class="panel-heading">
+              <div><p class="panel-kicker">Travels with the project</p><h2>Latest agent reply</h2></div>
+              <span id="replyState" class="chip">Incoming</span>
+            </div>
+            <pre id="latestReply" class="latest-reply">No previous reply. You are starting this application.</pre>
+          </section>
+
+          <section class="panel prompt-card">
+            <div class="panel-heading">
+              <div><p class="panel-kicker">Fresh session every run</p><h2>Prompt Deep Agents Code</h2></div>
+              <span id="agentModeBadge" class="chip"></span>
+            </div>
+            <form id="promptForm">
+              <label class="sr-only" for="promptInput">Prompt</label>
+              <textarea id="promptInput" rows="7" placeholder="Describe the change and the product context worth preserving…" required></textarea>
+              <div class="prompt-actions">
+                <span id="promptHint" class="muted compact">The task card and previous reply are not injected automatically.</span>
+                <button id="runButton" class="button primary" type="submit">Run prompt</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="terminal" aria-label="Agent activity">
+            <div class="terminal-bar">
+              <div class="terminal-lights" aria-hidden="true"><i></i><i></i><i></i></div>
+              <span>deepagents-code · isolated workspace</span>
+              <button id="clearTerminalButton" type="button">Clear</button>
+            </div>
+            <div id="terminalOutput" class="terminal-output" role="log">
+              <p><time>ready</time><span>Waiting for your prompt.</span></p>
+            </div>
+          </section>
+
+          <section class="panel preview-card">
+            <div class="panel-heading">
+              <div><p class="panel-kicker">Network-blocked sandbox</p><h2>Application preview</h2></div>
+              <div class="button-row">
+                <button id="refreshPreviewButton" class="button ghost small" type="button">Refresh</button>
+                <a id="openPreviewLink" class="button ghost small" href="#" target="_blank" rel="noopener">Open</a>
+              </div>
+            </div>
+            <iframe id="previewFrame" title="Sandboxed application preview"></iframe>
+          </section>
+
+          <section id="interpretationCard" class="panel interpretation-card" hidden>
+            <p class="panel-kicker">Without agent assistance</p>
+            <h2>What do you think this application is?</h2>
+            <label for="applicationFor">1. This application is for</label>
+            <input id="applicationFor" maxlength="500">
+            <label for="primaryUser">2. Its primary user is</label>
+            <input id="primaryUser" maxlength="500">
+            <label for="finalAction">3. Its final action causes</label>
+            <input id="finalAction" maxlength="500">
+          </section>
+
+          <div class="handoff-bar">
+            <div><strong>Ready to pass?</strong><span>The next person receives these files and the latest reply.</span></div>
+            <button id="passButton" class="button accent" type="button" disabled>Pass onward</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="reviewView" hidden>
+      <div class="work-header"><div><p class="eyebrow">Original-author review</p><h1 id="reviewTitle"></h1></div></div>
+      <div class="review-grid">
+        <div class="panel">
+          <p class="panel-kicker">Final interpretation</p>
+          <dl id="reviewInterpretation" class="interpretation-list"></dl>
+          <p class="panel-kicker spaced">SPEC-0</p>
+          <pre id="reviewSpec" class="review-copy"></pre>
+        </div>
+        <div class="panel">
+          <div class="panel-heading"><div><p class="panel-kicker">Returned application</p><h2>Final preview</h2></div><a id="reviewPreviewLink" class="button ghost small" target="_blank" rel="noopener">Open</a></div>
+          <iframe id="reviewPreviewFrame" class="review-preview" title="Final project preview"></iframe>
+          <label for="reviewNotes">Debrief notes</label>
+          <textarea id="reviewNotes" rows="5" placeholder="What survived? Where did the product drift?"></textarea>
+          <button id="completeReviewButton" class="button accent full" type="button">Complete author review</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="codeDialog" class="code-dialog">
+    <div class="dialog-heading"><h2>Current project files</h2><button id="closeCodeButton" class="button ghost small" type="button">Close</button></div>
+    <div class="code-tabs" role="tablist">
+      <button type="button" data-file="index.html" class="active">index.html</button>
+      <button type="button" data-file="styles.css">styles.css</button>
+      <button type="button" data-file="app.js">app.js</button>
+    </div>
+    <pre id="codeOutput"></pre>
+  </dialog>
+
+  <dialog id="specDialog" class="spec-dialog">
+    <button id="closeSpecButton" class="button ghost small dialog-close" type="button">Close</button>
+    <img id="specDialogImage" alt="Expanded SPEC-0 product constitution">
+  </dialog>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+  <script src="/assets/app.js"></script>
+</body>
+</html>

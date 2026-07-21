@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Workshop Host · Context Telephone</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/admin" aria-label="Workshop host home">
+      <span class="brand-mark">CT</span>
+      <span><strong>Context Telephone</strong><small>Workshop host</small></span>
+    </a>
+    <div class="topbar-actions">
+      <span id="adminConnection" class="status-dot">Not connected</span>
+      <a class="button ghost small" href="/">Participant UI</a>
+    </div>
+  </header>
+
+  <main class="shell admin-shell">
+    <section id="adminLogin" class="panel admin-login">
+      <p class="panel-kicker">Host access</p>
+      <h1>Open the control room</h1>
+      <p class="muted">The code stays in this browser tab only.</p>
+      <form id="adminLoginForm">
+        <label for="adminCode">Admin code</label>
+        <input id="adminCode" type="password" autocomplete="current-password" required autofocus>
+        <button class="button primary full" type="submit">Open admin</button>
+        <p id="adminLoginError" class="error-message" role="alert"></p>
+      </form>
+    </section>
+
+    <section id="adminDashboard" hidden>
+      <div class="work-header">
+        <div><p class="eyebrow">Live control</p><h1>Workshop lobby</h1></div>
+        <span id="adminStateBadge" class="chip"></span>
+      </div>
+
+      <div class="admin-grid">
+        <section class="panel admin-roster-card">
+          <div class="panel-heading">
+            <div><p class="panel-kicker">Locked on start</p><h2>Participant roster</h2></div>
+            <strong id="adminCount" class="admin-count">0 / 12</strong>
+          </div>
+          <ol id="adminRoster" class="admin-roster"></ol>
+          <p id="adminEmpty" class="muted">Nobody has joined yet.</p>
+        </section>
+
+        <section class="panel admin-start-card">
+          <p class="panel-kicker">Host action</p>
+          <h2 id="adminActionTitle">Start when the room is ready</h2>
+          <p id="adminActionCopy" class="muted"></p>
+          <button id="adminStartButton" class="button accent full" type="button" disabled>Start workshop</button>
+          <p id="adminActionError" class="error-message" role="alert"></p>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script src="/assets/admin.js"></script>
+</body>
+</html>
