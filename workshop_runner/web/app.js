@@ -65,6 +65,7 @@ function toast(message, error = false) {
 }
 
 function terminal(message, className = "") {
+  appState.progressTail = null;
   const line = document.createElement("p");
   const time = document.createElement("time");
   const text = document.createElement("span");
@@ -103,6 +104,23 @@ function terminalStream(text, stream) {
 function renderProgressEvent(event) {
   if (["stdout", "stderr"].includes(event.stream)) {
     terminalStream(event.text, event.stream);
+  } else if (event.stream === "activity") {
+    try {
+      const activity = JSON.parse(event.text);
+      const file = activity.file ? ` · ${activity.file}` : "";
+      const status = activity.status ? ` · ${activity.status}` : "";
+      const labels = {
+        "session.start": "DCode session started",
+        "tool.use": `Calling tool: ${activity.tool || "unknown"}${file}`,
+        "tool.result": `Tool completed: ${activity.tool || "unknown"}${file}${status}`,
+        "tool.error": "DCode tool failed",
+        "task.complete": "DCode task completed",
+        "session.end": "DCode session ended",
+      };
+      terminal(labels[activity.event] || activity.event, activity.status === "error" ? "failure" : "");
+    } catch (_) {
+      terminal(event.text);
+    }
   } else {
     appState.progressTail = null;
     terminal(event.text);
@@ -112,6 +130,7 @@ function renderProgressEvent(event) {
 async function fetchRunProgress(clientRequestId, tracker) {
   const progress = await api(`/api/run-progress/${encodeURIComponent(clientRequestId)}?cursor=${tracker.cursor}`);
   progress.events.forEach(renderProgressEvent);
+  if (progress.events.length) tracker.lastEventAt = Date.now();
   tracker.cursor = progress.cursor;
 }
 
@@ -122,6 +141,16 @@ async function followRunProgress(clientRequestId, tracker) {
     } catch (_) {
       // The main request reports actionable failures. A transient polling
       // failure should not hide or cancel the agent run.
+    }
+    const now = Date.now();
+    const elapsed = Math.floor((now - tracker.startedAt) / 1000);
+    if (
+      elapsed >= 15
+      && now - tracker.lastEventAt >= 15_000
+      && elapsed - tracker.lastHeartbeatAt >= 15
+    ) {
+      terminal(`Still running (${elapsed}s); Deep Agents Code has not emitted new stdout/stderr.`);
+      tracker.lastHeartbeatAt = elapsed;
     }
     if (!tracker.done) await new Promise((resolve) => setTimeout(resolve, 400));
   }
@@ -295,7 +324,13 @@ $("#promptForm").addEventListener("submit", async (event) => {
   const prompt = $("#promptInput").value.trim();
   if (!prompt || !appState.assignment) return;
   const clientRequestId = requestId();
-  const tracker = { cursor: 0, done: false };
+  const tracker = {
+    cursor: 0,
+    done: false,
+    startedAt: Date.now(),
+    lastEventAt: Date.now(),
+    lastHeartbeatAt: 0,
+  };
   setBusy(true);
   appState.progressTail = null;
   terminal("Opening a completely fresh agent session…");

@@ -90,7 +90,7 @@ class Settings:
             agent_mode=agent_mode,
             model=os.getenv("WORKSHOP_MODEL", "gpt-5.6-luna").strip(),
             reasoning_effort=os.getenv(
-                "WORKSHOP_REASONING_EFFORT", "high"
+                "WORKSHOP_REASONING_EFFORT", "medium"
             ).strip(),
             agent_timeout_seconds=int(os.getenv("WORKSHOP_AGENT_TIMEOUT", "210")),
             agent_max_turns=int(os.getenv("WORKSHOP_AGENT_MAX_TURNS", "50")),

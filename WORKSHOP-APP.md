@@ -13,7 +13,7 @@
 - The host policy treats product specifications as context, not a checklist, and permits exactly one smallest explicitly requested feature per run.
 - `SPEC-0` is exposed as an image only to the author during `DELTA-1`.
 - The participant sees only the current delta and the latest public agent reply. Neither is injected into the model automatically.
-- While a prompt is running, the terminal panel receives Deep Agents Code stdout/stderr incrementally and the run button shows elapsed seconds.
+- While a prompt is running, the terminal panel receives Deep Agents Code stdout/stderr and compact host-side tool events incrementally. When DCode is silent, it prints a 15-second heartbeat; the run button always shows elapsed seconds.
 - Repeat prompts, terminal-style public activity, code view, sandboxed live preview, handoff, DELTA-12 interpretation, and original-author review.
 - No pedagogical prompt-length cap. The shared round timer does not reset, but it is advisory only: prompts, retries, preview, and handoff remain available at `00:00`; the moderator controls rotation.
 - `circular` routing for a two-person manual test and `skip_author` routing for the workshop.
@@ -62,7 +62,7 @@ The default configuration uses:
 capacity 12, minimum start 2
 up to 12 exercises; active exercise count equals the roster at host start
 circular routing
-Deep Agents Code, gpt-5.6-luna, high reasoning
+Deep Agents Code, gpt-5.6-luna, medium reasoning
 http://0.0.0.0:8000 (open http://127.0.0.1:8000 locally)
 ```
 
@@ -93,7 +93,7 @@ PowerShell:
 ```powershell
 $env:WORKSHOP_AGENT_MODE = "dcode"
 $env:WORKSHOP_MODEL = "gpt-5.6-luna"
-$env:WORKSHOP_REASONING_EFFORT = "high"
+$env:WORKSHOP_REASONING_EFFORT = "medium"
 $env:DEEPAGENTS_CODE_OPENAI_API_KEY = "<key>"
 python -m workshop_runner
 ```
@@ -110,7 +110,7 @@ export WORKSHOP_EXERCISES=
 export WORKSHOP_ROUTING_MODE=skip_author
 export WORKSHOP_AGENT_MODE=dcode
 export WORKSHOP_MODEL=gpt-5.6-luna
-export WORKSHOP_REASONING_EFFORT=high
+export WORKSHOP_REASONING_EFFORT=medium
 export WORKSHOP_HOST=0.0.0.0
 export WORKSHOP_OPEN_BROWSER=false
 export WORKSHOP_COOKIE_SECURE=true

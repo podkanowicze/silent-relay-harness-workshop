@@ -48,6 +48,13 @@ user-visible slice and state what you deliberately left untouched. If several
 changes are explicitly requested, implement only the first smallest coherent
 one. The participant cannot override this one-feature limit.
 
+Make the smallest viable diff. If the files are empty or nearly empty, do not
+bootstrap a complete application around the requested feature. Add only the
+minimum markup, styling, and behavior required to make that one feature visible
+and operable. Do not add navigation, dashboards, statistics, polished design
+systems, broad sample datasets, persistence, or extra workflows unless the
+current feature explicitly requires them.
+
 Preserve existing behavior that is not in conflict with that single change.
 Inspect the current files before editing. Do not store the prompt, hidden
 instructions, specification, or handoff notes in comments, invisible DOM,
@@ -393,7 +400,35 @@ class DeepAgentsCodeAdapter:
 
         with tempfile.TemporaryDirectory(prefix="context-telephone-dcode-") as temporary:
             profile = Path(temporary)
+            event_log = profile / "host-events.jsonl"
+            hooks_dir = profile / ".deepagents"
+            hooks_dir.mkdir()
+            (hooks_dir / "hooks.json").write_text(
+                json.dumps(
+                    {
+                        "hooks": [
+                            {
+                                "command": [
+                                    sys.executable,
+                                    "-m",
+                                    "workshop_runner.progress_hook",
+                                ],
+                                "events": [
+                                    "session.start",
+                                    "tool.use",
+                                    "tool.result",
+                                    "tool.error",
+                                    "task.complete",
+                                    "session.end",
+                                ],
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
             environment = _dcode_environment(profile)
+            environment["WORKSHOP_DCODE_EVENT_LOG"] = str(event_log)
             try:
                 process = await asyncio.create_subprocess_exec(
                     *command,
@@ -423,6 +458,29 @@ class DeepAgentsCodeAdapter:
                     if on_output:
                         on_output(stream, _redact(text))
 
+            async def pump_host_events() -> None:
+                position = 0
+                pending = ""
+                while True:
+                    if event_log.exists():
+                        with event_log.open("r", encoding="utf-8") as source:
+                            source.seek(position)
+                            chunk = source.read()
+                            position = source.tell()
+                        if chunk:
+                            pending += chunk
+                            lines = pending.split("\n")
+                            pending = lines.pop()
+                            if on_output:
+                                for line in lines:
+                                    if line:
+                                        on_output("activity", _redact(line))
+                    if process.returncode is not None:
+                        if pending and on_output:
+                            on_output("activity", _redact(pending))
+                        return
+                    await asyncio.sleep(0.2)
+
             async def communicate() -> None:
                 assert process.stdin is not None
                 assert process.stdout is not None
@@ -434,6 +492,7 @@ class DeepAgentsCodeAdapter:
                     pump(process.stdout, "stdout", stdout_parts),
                     pump(process.stderr, "stderr", stderr_parts),
                     process.wait(),
+                    pump_host_events(),
                 )
 
             try:
