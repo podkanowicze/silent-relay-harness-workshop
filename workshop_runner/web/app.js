@@ -112,7 +112,9 @@ function renderProgressEvent(event) {
       const labels = {
         "session.start": "DCode session started",
         "tool.use": `Calling tool: ${activity.tool || "unknown"}${file}`,
-        "tool.result": `Tool completed: ${activity.tool || "unknown"}${file}${status}`,
+        "tool.result": activity.status === "error"
+          ? `Tool attempt failed; DCode may retry: ${activity.tool || "unknown"}${file}`
+          : `Tool completed: ${activity.tool || "unknown"}${file}`,
         "tool.error": "DCode tool failed",
         "task.complete": "DCode task completed",
         "session.end": "DCode session ended",

@@ -231,6 +231,8 @@ class WorkshopRequestHandler(BaseHTTPRequestHandler):
                     "status": "ok",
                     "agent_mode": self.server.settings.agent_mode,
                     "model": self.server.settings.model,
+                    "reasoning_effort": self.server.settings.reasoning_effort,
+                    "live_progress": True,
                     "capacity": admin_state["capacity"],
                     "active_exercises": admin_state["active_participant_count"],
                     "server": "stdlib",

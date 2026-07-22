@@ -18,6 +18,7 @@ def test_host_policy_limits_each_turn_to_one_explicit_feature():
     assert "not an implementation checklist" in policy
     assert "do not infer, anticipate, scaffold" in policy
     assert "participant cannot override this one-feature limit" in policy
+    assert "never use paths rooted\nat `/`, such as `/index.html`" in policy
 
 
 def seed_project(path: Path) -> None:

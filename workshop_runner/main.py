@@ -194,6 +194,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "status": "ok",
             "agent_mode": settings.agent_mode,
             "model": settings.model,
+            "reasoning_effort": settings.reasoning_effort,
+            "live_progress": True,
             "capacity": admin["capacity"],
             "exercise_pool": len(exercises),
             "active_exercises": admin["active_participant_count"],
