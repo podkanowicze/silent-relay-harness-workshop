@@ -247,6 +247,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def state(user: Any = Depends(current_user)) -> dict[str, Any]:
         return service.public_state(user["id"])
 
+    @app.get("/api/run-progress/{client_request_id}")
+    async def run_progress(
+        client_request_id: str,
+        cursor: int = 0,
+        user: Any = Depends(current_user),
+    ) -> dict[str, Any]:
+        return service.run_progress(
+            user_id=user["id"],
+            client_request_id=client_request_id,
+            cursor=cursor,
+        )
+
     @app.post("/api/run")
     async def run_prompt(
         body: PromptBody, user: Any = Depends(current_user)

@@ -9,6 +9,8 @@ const appState = {
   clockTimer: null,
   timerExpired: false,
   currentFile: "index.html",
+  runClockTimer: null,
+  progressTail: null,
 };
 
 function requestId() {
@@ -77,6 +79,52 @@ function terminal(message, className = "") {
 function renderActivity(activity) {
   const path = activity.path ? ` · ${activity.path}` : "";
   terminal(`${activity.message || activity.type}${path}`, activity.type === "file.changed" ? "path" : "");
+}
+
+function terminalStream(text, stream) {
+  if (!text) return;
+  let tail = appState.progressTail;
+  if (!tail || tail.dataset.stream !== stream) {
+    const line = document.createElement("p");
+    const time = document.createElement("time");
+    const output = document.createElement("span");
+    time.textContent = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    output.className = `stream ${stream === "stderr" ? "failure" : ""}`.trim();
+    line.dataset.stream = stream;
+    line.append(time, output);
+    $("#terminalOutput").append(line);
+    appState.progressTail = line;
+    tail = line;
+  }
+  tail.lastElementChild.textContent += text;
+  $("#terminalOutput").scrollTop = $("#terminalOutput").scrollHeight;
+}
+
+function renderProgressEvent(event) {
+  if (["stdout", "stderr"].includes(event.stream)) {
+    terminalStream(event.text, event.stream);
+  } else {
+    appState.progressTail = null;
+    terminal(event.text);
+  }
+}
+
+async function fetchRunProgress(clientRequestId, tracker) {
+  const progress = await api(`/api/run-progress/${encodeURIComponent(clientRequestId)}?cursor=${tracker.cursor}`);
+  progress.events.forEach(renderProgressEvent);
+  tracker.cursor = progress.cursor;
+}
+
+async function followRunProgress(clientRequestId, tracker) {
+  while (!tracker.done) {
+    try {
+      await fetchRunProgress(clientRequestId, tracker);
+    } catch (_) {
+      // The main request reports actionable failures. A transient polling
+      // failure should not hide or cancel the agent run.
+    }
+    if (!tracker.done) await new Promise((resolve) => setTimeout(resolve, 400));
+  }
 }
 
 function configurePolling(screen) {
@@ -205,10 +253,21 @@ async function loadState() {
 
 function setBusy(busy) {
   appState.busy = busy;
+  clearInterval(appState.runClockTimer);
   $("#runButton").disabled = busy;
   $("#promptInput").disabled = busy;
   $("#passButton").disabled = busy || !appState.assignment?.has_successful_run;
-  $("#runButton").textContent = busy ? "Agent running…" : "Run prompt";
+  if (busy) {
+    const started = Date.now();
+    const update = () => {
+      const seconds = Math.floor((Date.now() - started) / 1000);
+      $("#runButton").textContent = `Agent running · ${seconds}s`;
+    };
+    update();
+    appState.runClockTimer = setInterval(update, 1000);
+  } else {
+    $("#runButton").textContent = "Run prompt";
+  }
 }
 
 $("#loginForm").addEventListener("submit", async (event) => {
@@ -235,16 +294,20 @@ $("#promptForm").addEventListener("submit", async (event) => {
   event.preventDefault();
   const prompt = $("#promptInput").value.trim();
   if (!prompt || !appState.assignment) return;
+  const clientRequestId = requestId();
+  const tracker = { cursor: 0, done: false };
   setBusy(true);
+  appState.progressTail = null;
   terminal("Opening a completely fresh agent session…");
   terminal("Mounting only index.html, styles.css, and app.js…");
+  const progressFollower = followRunProgress(clientRequestId, tracker);
   try {
     const result = await api("/api/run", {
       method: "POST",
       body: JSON.stringify({
         assignment_id: appState.assignment.id,
         prompt,
-        client_request_id: requestId(),
+        client_request_id: clientRequestId,
       }),
     });
     result.activities.forEach(renderActivity);
@@ -256,6 +319,9 @@ $("#promptForm").addEventListener("submit", async (event) => {
     terminal(error.message, "failure");
     toast(error.message, true);
   } finally {
+    await fetchRunProgress(clientRequestId, tracker).catch(() => {});
+    tracker.done = true;
+    await progressFollower;
     setBusy(false);
   }
 });
@@ -310,7 +376,10 @@ $("#refreshPreviewButton").addEventListener("click", () => {
   if (appState.assignment) $("#previewFrame").src = `${appState.assignment.preview_url}?v=${Date.now()}`;
 });
 
-$("#clearTerminalButton").addEventListener("click", () => $("#terminalOutput").replaceChildren());
+$("#clearTerminalButton").addEventListener("click", () => {
+  appState.progressTail = null;
+  $("#terminalOutput").replaceChildren();
+});
 
 async function loadCode(filename) {
   if (!appState.assignment) return;

@@ -195,7 +195,7 @@ class WorkshopRequestHandler(BaseHTTPRequestHandler):
             self._handle_error(error)
 
     def _do_get(self) -> None:
-        path, segments, _query = self._route()
+        path, segments, query = self._route()
         if path == "/":
             self._send(
                 200,
@@ -244,6 +244,22 @@ class WorkshopRequestHandler(BaseHTTPRequestHandler):
         if path == "/api/state":
             user = self._user()
             self._json(200, self.server.service.public_state(user["id"]))
+            return
+        if len(segments) == 3 and segments[:2] == ["api", "run-progress"]:
+            user = self._user()
+            try:
+                cursor = int(query.get("cursor", ["0"])[0])
+            except ValueError as error:
+                raise ValidationError("Progress cursor must be an integer") from error
+            self._json(
+                200,
+                self.server.service.run_progress(
+                    user_id=user["id"],
+                    client_request_id=segments[2],
+                    cursor=cursor,
+                ),
+                {"Cache-Control": "no-store"},
+            )
             return
         if len(segments) == 4 and segments[:2] == ["api", "files"]:
             user = self._user()

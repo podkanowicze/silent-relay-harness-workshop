@@ -38,6 +38,67 @@ class WorkshopService:
         self.exercises = {exercise.slug: exercise for exercise in exercises}
         self.runtime = runtime
         self._project_locks: defaultdict[int, threading.Lock] = defaultdict(threading.Lock)
+        self._progress_lock = threading.Lock()
+        self._run_progress: dict[str, dict[str, Any]] = {}
+
+    def _begin_progress(
+        self, client_request_id: str, user_id: int, assignment_id: int
+    ) -> None:
+        with self._progress_lock:
+            if len(self._run_progress) >= 256:
+                oldest = next(iter(self._run_progress))
+                self._run_progress.pop(oldest, None)
+            self._run_progress[client_request_id] = {
+                "user_id": user_id,
+                "assignment_id": assignment_id,
+                "status": "running",
+                "events": [],
+                "output_chars": 0,
+            }
+
+    def _append_progress(self, client_request_id: str, stream: str, text: str) -> None:
+        if not text:
+            return
+        with self._progress_lock:
+            progress = self._run_progress.get(client_request_id)
+            if progress is None:
+                return
+            remaining = 250_000 - progress["output_chars"]
+            if remaining <= 0:
+                return
+            visible = text[:remaining]
+            progress["events"].append({"stream": stream, "text": visible})
+            progress["output_chars"] += len(visible)
+            if len(text) > remaining:
+                progress["events"].append(
+                    {
+                        "stream": "system",
+                        "text": "Live output truncated after 250,000 characters.",
+                    }
+                )
+
+    def _finish_progress(self, client_request_id: str, status: str) -> None:
+        with self._progress_lock:
+            progress = self._run_progress.get(client_request_id)
+            if progress is not None:
+                progress["status"] = status
+
+    def run_progress(
+        self, *, user_id: int, client_request_id: str, cursor: int = 0
+    ) -> dict[str, Any]:
+        with self._progress_lock:
+            progress = self._run_progress.get(client_request_id)
+            if progress is None:
+                return {"status": "pending", "cursor": 0, "events": []}
+            if progress["user_id"] != user_id:
+                raise ConflictError("Run progress belongs to another participant")
+            events = progress["events"]
+            safe_cursor = max(0, min(cursor, len(events)))
+            return {
+                "status": progress["status"],
+                "cursor": len(events),
+                "events": [dict(event) for event in events[safe_cursor:]],
+            }
 
     def admin_state(self) -> dict[str, Any]:
         return self.store.admin_state()
@@ -114,34 +175,61 @@ class WorkshopService:
             )
 
         assignment = self.store.assignment_for_user(user_id, assignment_id)
-        async with self._project_lock(assignment["work_item_id"]):
-            reserved = self.store.reserve_prompt(
-                user_id=user_id,
-                assignment_id=assignment_id,
-                client_request_id=client_request_id,
-                prompt=prompt,
-                runtime=self.runtime.name,
-                model=self.settings.model,
-            )
-            if reserved["status"] == "succeeded":
-                return self._stored_run_response(reserved)
-            if reserved["status"] == "failed":
-                raise ConflictError(reserved["error_text"] or "Previous run failed")
-            if reserved.get("reused"):
-                raise ConflictError("Agent run is already in progress")
+        self._begin_progress(client_request_id, user_id, assignment_id)
+        self._append_progress(
+            client_request_id, "system", "Run accepted by the workshop server."
+        )
+        try:
+            async with self._project_lock(assignment["work_item_id"]):
+                reserved = self.store.reserve_prompt(
+                    user_id=user_id,
+                    assignment_id=assignment_id,
+                    client_request_id=client_request_id,
+                    prompt=prompt,
+                    runtime=self.runtime.name,
+                    model=self.settings.model,
+                )
+                if reserved["status"] == "succeeded":
+                    self._finish_progress(client_request_id, "succeeded")
+                    return self._stored_run_response(reserved)
+                if reserved["status"] == "failed":
+                    raise ConflictError(reserved["error_text"] or "Previous run failed")
+                if reserved.get("reused"):
+                    raise ConflictError("Agent run is already in progress")
 
-            project_dir = Path(reserved["workspace_dir"])
-            try:
-                result = await self.runtime.run(project_dir, prompt)
+                project_dir = Path(reserved["workspace_dir"])
+                self._append_progress(
+                    client_request_id,
+                    "system",
+                    "Deep Agents Code started in an isolated three-file workspace.",
+                )
+                result = await self.runtime.run(
+                    project_dir,
+                    prompt,
+                    lambda stream, text: self._append_progress(
+                        client_request_id, stream, text
+                    ),
+                )
+                self._append_progress(
+                    client_request_id,
+                    "system",
+                    "Agent finished; validating and publishing the three files.",
+                )
                 self._publish_and_record(
                     run_id=reserved["id"],
                     result=result,
                     project_dir=project_dir,
                     expected_project_version=reserved["project_version"],
                 )
-            except Exception as error:
+        except Exception as error:
+            if "reserved" in locals() and not reserved.get("reused"):
                 self.store.fail_prompt(reserved["id"], str(error))
-                raise
+            self._append_progress(client_request_id, "system", f"Run failed: {error}")
+            self._finish_progress(client_request_id, "failed")
+            raise
+
+        self._append_progress(client_request_id, "system", "Changes committed.")
+        self._finish_progress(client_request_id, "succeeded")
 
         return {
             "status": "succeeded",

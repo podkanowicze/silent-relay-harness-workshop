@@ -53,6 +53,13 @@ def test_browser_api_spec_preview_prompt_and_pass(tmp_path):
     assert run.status_code == 200
     assert run.json()["status"] == "succeeded"
 
+    progress = client.get("/api/run-progress/api-run-0001?cursor=0")
+    assert progress.status_code == 200
+    assert progress.json()["status"] == "succeeded"
+    assert any(
+        event["stream"] == "stdout" for event in progress.json()["events"]
+    )
+
     passed = client.post(
         "/api/pass",
         json={

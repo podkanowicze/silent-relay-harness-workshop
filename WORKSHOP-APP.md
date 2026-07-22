@@ -12,6 +12,7 @@
 - Every prompt starts a new DCode process and fresh thread. A disposable profile prevents memory, skills, hooks, config, and conversation history from crossing turns.
 - `SPEC-0` is exposed as an image only to the author during `DELTA-1`.
 - The participant sees only the current delta and the latest public agent reply. Neither is injected into the model automatically.
+- While a prompt is running, the terminal panel receives Deep Agents Code stdout/stderr incrementally and the run button shows elapsed seconds.
 - Repeat prompts, terminal-style public activity, code view, sandboxed live preview, handoff, DELTA-12 interpretation, and original-author review.
 - No pedagogical prompt-length cap. The shared round timer does not reset, but it is advisory only: prompts, retries, preview, and handoff remain available at `00:00`; the moderator controls rotation.
 - `circular` routing for a two-person manual test and `skip_author` routing for the workshop.

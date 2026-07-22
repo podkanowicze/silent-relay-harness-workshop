@@ -13,7 +13,7 @@ import sys
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol
 
 from .config import Settings
 from .store import EDITABLE_FILES
@@ -77,7 +77,12 @@ class AgentResult:
 class RuntimeAdapter(Protocol):
     name: str
 
-    async def invoke(self, stage: Path, prompt: str) -> tuple[str, list[dict[str, Any]]]: ...
+    async def invoke(
+        self,
+        stage: Path,
+        prompt: str,
+        on_output: Callable[[str, str], None] | None = None,
+    ) -> tuple[str, list[dict[str, Any]]]: ...
 
 
 def _redact(text: str) -> str:
@@ -143,8 +148,15 @@ def project_hash(files: dict[str, str]) -> str:
 class MockAdapter:
     name = "mock"
 
-    async def invoke(self, stage: Path, prompt: str) -> tuple[str, list[dict[str, Any]]]:
+    async def invoke(
+        self,
+        stage: Path,
+        prompt: str,
+        on_output: Callable[[str, str], None] | None = None,
+    ) -> tuple[str, list[dict[str, Any]]]:
         await asyncio.sleep(0)
+        if on_output:
+            on_output("stdout", "Mock agent is inspecting the workspace…\n")
         normalized = prompt.strip().casefold()
         if "mock:create-file" in normalized:
             (stage / "notes.md").write_text("forbidden", encoding="utf-8")
@@ -330,7 +342,12 @@ class DeepAgentsCodeAdapter:
         _dcode_environment(Path(tempfile.gettempdir()))
         self.settings = settings
 
-    async def invoke(self, stage: Path, prompt: str) -> tuple[str, list[dict[str, Any]]]:
+    async def invoke(
+        self,
+        stage: Path,
+        prompt: str,
+        on_output: Callable[[str, str], None] | None = None,
+    ) -> tuple[str, list[dict[str, Any]]]:
         model = _model_spec(self.settings.model)
         model_params = json.dumps(
             {"reasoning": {"effort": self.settings.reasoning_effort}},
@@ -342,7 +359,6 @@ class DeepAgentsCodeAdapter:
             "workshop_runner.dcode_entrypoint",
             "--stdin",
             "--quiet",
-            "--no-stream",
             "--model",
             model,
             "--model-params",
@@ -381,10 +397,36 @@ class DeepAgentsCodeAdapter:
                     f"Could not start Deep Agents Code: {_redact(str(error))}"
                 ) from error
 
+            stdout_parts: list[str] = []
+            stderr_parts: list[str] = []
+
+            async def pump(
+                reader: asyncio.StreamReader,
+                stream: str,
+                destination: list[str],
+            ) -> None:
+                while chunk := await reader.read(1024):
+                    text = chunk.decode("utf-8", errors="replace")
+                    destination.append(text)
+                    if on_output:
+                        on_output(stream, _redact(text))
+
+            async def communicate() -> None:
+                assert process.stdin is not None
+                assert process.stdout is not None
+                assert process.stderr is not None
+                process.stdin.write(_turn_message(stage, prompt).encode("utf-8"))
+                await process.stdin.drain()
+                process.stdin.close()
+                await asyncio.gather(
+                    pump(process.stdout, "stdout", stdout_parts),
+                    pump(process.stderr, "stderr", stderr_parts),
+                    process.wait(),
+                )
+
             try:
-                stdout, stderr = await asyncio.wait_for(
-                    process.communicate(_turn_message(stage, prompt).encode("utf-8")),
-                    timeout=self.settings.agent_timeout_seconds + 30,
+                await asyncio.wait_for(
+                    communicate(), timeout=self.settings.agent_timeout_seconds + 30
                 )
             except TimeoutError as error:
                 await _kill_process_tree(process)
@@ -392,10 +434,8 @@ class DeepAgentsCodeAdapter:
                     "Deep Agents Code exceeded the configured timeout"
                 ) from error
 
-        response = stdout.decode("utf-8", errors="replace").strip()
-        diagnostics = _redact(
-            stderr.decode("utf-8", errors="replace").strip()
-        )[-4000:]
+        response = "".join(stdout_parts).strip()
+        diagnostics = _redact("".join(stderr_parts).strip())[-4000:]
         if process.returncode == 124:
             raise AgentRuntimeError(
                 "Deep Agents Code exceeded the configured timeout; no files were committed"
@@ -438,7 +478,12 @@ class AgentRuntime:
     def name(self) -> str:
         return self.adapter.name
 
-    async def run(self, project_dir: Path, prompt: str) -> AgentResult:
+    async def run(
+        self,
+        project_dir: Path,
+        prompt: str,
+        on_output: Callable[[str, str], None] | None = None,
+    ) -> AgentResult:
         before = validate_workspace(project_dir, self.settings.max_file_bytes)
         before_digest = project_hash(before)
         with tempfile.TemporaryDirectory(
@@ -448,7 +493,7 @@ class AgentRuntime:
             for filename, content in before.items():
                 (stage / filename).write_bytes(content.encode("utf-8"))
 
-            response, activities = await self.adapter.invoke(stage, prompt)
+            response, activities = await self.adapter.invoke(stage, prompt, on_output)
             response = _redact(response).strip()
             if not response:
                 raise AgentRuntimeError(
