@@ -16,6 +16,12 @@ def test_browser_api_spec_preview_prompt_and_pass(tmp_path):
     )
     client = TestClient(create_app(settings))
 
+    slides = client.get("/slides")
+    assert slides.status_code == 200
+    assert "Silent Relay" in slides.text
+    assert client.get("/slides/slides.css").status_code == 200
+    assert client.get("/slides/slides.js").status_code == 200
+
     login = client.post("/api/login", json={"nickname": "Solo", "client": "browser"})
     assert login.status_code == 200
     assert "token" not in login.json()

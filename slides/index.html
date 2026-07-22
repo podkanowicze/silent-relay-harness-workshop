@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Silent Relay · Context Engineering Workshop</title>
+  <link rel="stylesheet" href="/slides/slides.css">
+</head>
+<body>
+  <header class="deck-header">
+    <a class="deck-brand" href="#1"><span>SR</span> Silent Relay</a>
+    <div class="deck-progress" aria-hidden="true"><i id="progressBar"></i></div>
+    <span id="sectionLabel">Opening</span>
+  </header>
+
+  <main id="deck" aria-live="polite">
+    <section class="slide cover active" data-section="Opening" data-minutes="1">
+      <div class="cover-grid">
+        <div>
+          <p class="kicker">Context engineering workshop · 90 minutes</p>
+          <h1>Silent<br><em>Relay</em></h1>
+          <p class="lead">Can product intent survive twelve locally reasonable changes?</p>
+        </div>
+        <div class="relay-orbit" aria-label="Twelve participants passing applications">
+          <strong>12</strong><span>people</span><b>12</b><span>apps</span><i>12</i><span>fresh agents</span>
+        </div>
+      </div>
+      <p class="cover-line">The code remembers. The model does not.</p>
+      <aside class="notes">1 min. Do not explain the answer yet. Frame this as an experiment, not a prompting competition.</aside>
+    </section>
+
+    <section class="slide" data-section="Opening" data-minutes="1">
+      <p class="kicker">The experiment</p>
+      <h2>One application.<br>Twelve interpretations.</h2>
+      <div class="equation">
+        <span>complete intent</span><b>+</b><span>small changes</span><b>+</b><span>fresh agents</span><b>=</b><strong>?</strong>
+      </div>
+      <p class="statement">A technically working application can still become the wrong product.</p>
+      <aside class="notes">Ask for a show of hands: who has seen an agent implement the request correctly but misunderstand the product?</aside>
+    </section>
+
+    <section class="slide" data-section="Mechanics" data-minutes="2">
+      <p class="kicker">The relay boundary</p>
+      <h2>What crosses into the next turn?</h2>
+      <div class="flow">
+        <div class="flow-node human"><small>Participant</small><strong>reads & decides</strong></div>
+        <span>→</span>
+        <div class="flow-node agent"><small>Fresh DCode</small><strong>one feature</strong></div>
+        <span>→</span>
+        <div class="flow-node state"><small>Durable state</small><strong>3 files + last reply</strong></div>
+        <span>→</span>
+        <div class="flow-node human"><small>Next participant</small><strong>reconstructs intent</strong></div>
+      </div>
+      <div class="split-list">
+        <div><h3>Travels</h3><ul class="yes"><li>Visible application</li><li>HTML, CSS, JavaScript</li><li>Latest public agent reply</li></ul></div>
+        <div><h3>Does not travel</h3><ul class="no"><li>Previous prompts or reasoning</li><li>Conversation history</li><li>SPEC-0 after round one</li></ul></div>
+      </div>
+      <aside class="notes">2 min. Stress that the next person sees the last reply but it is not injected automatically.</aside>
+    </section>
+
+    <section class="slide" data-section="Mechanics" data-minutes="1">
+      <p class="kicker">Information asymmetry</p>
+      <h2>Each person knows less<br>than the chain needs.</h2>
+      <div class="three-cards">
+        <article><span>01</span><h3>Author</h3><p>SPEC-0 image + DELTA-1 + empty files.</p></article>
+        <article><span>02–12</span><h3>Relay</h3><p>Current delta + current code + last reply.</p></article>
+        <article><span>13</span><h3>Author review</h3><p>Original intent meets the returned product.</p></article>
+      </div>
+      <aside class="notes">Round 13 is review only, not implementation. The original author is skipped throughout rounds 2–12.</aside>
+    </section>
+
+    <section class="slide" data-section="Agenda" data-minutes="1">
+      <p class="kicker">90-minute map</p>
+      <h2>Fast enough to drift.<br>Slow enough to notice.</h2>
+      <div class="timeline">
+        <div style="--w: 15"><b>00–15</b><span>Concept, demo, rules</span></div>
+        <div style="--w: 8"><b>15–23</b><span>Round 1</span></div>
+        <div style="--w: 44"><b>23–67</b><span>Rounds 2–12</span></div>
+        <div style="--w: 14"><b>67–81</b><span>Interpret + review</span></div>
+        <div style="--w: 9"><b>81–90</b><span>Debrief</span></div>
+      </div>
+      <aside class="notes">Keep the introduction on schedule. The room learns through the relay, not through a long lecture.</aside>
+    </section>
+
+    <section class="slide" data-section="Participant loop" data-minutes="2">
+      <p class="kicker">Your loop</p>
+      <h2>Read → infer → prompt → inspect → pass</h2>
+      <ol class="loop">
+        <li><b>Read</b><span>Delta, preview, code, last reply.</span></li>
+        <li><b>Infer</b><span>What is this product actually for?</span></li>
+        <li><b>Prompt</b><span>Give relevant context; request one feature.</span></li>
+        <li><b>Inspect</b><span>Watch activity. Check the visible result.</span></li>
+        <li><b>Pass</b><span>Leave code and a useful final reply.</span></li>
+      </ol>
+      <aside class="notes">2 min. Participants may prompt repeatedly. The timer does not reset and does not disable actions.</aside>
+    </section>
+
+    <section class="slide" data-section="Prompting" data-minutes="2">
+      <p class="kicker">A useful turn prompt</p>
+      <h2>Context is not scope.</h2>
+      <div class="prompt-anatomy">
+        <div><small>PRODUCT</small><p>This is an internal tool for…</p></div>
+        <div><small>INVARIANT</small><p>It must continue to…</p></div>
+        <div class="accent"><small>CURRENT DELTA</small><p>For this turn, add only…</p></div>
+        <div><small>STOP CONDITION</small><p>Stop once the visible behavior…</p></div>
+      </div>
+      <pre class="prompt-example">This is an internal allocation tool, not a customer checkout.
+Preserve the existing approval boundary.
+For this turn, add only the requested status filter.
+Stop when it works in the current list.</pre>
+      <aside class="notes">The example is deliberately domain-neutral so it does not spoil any exercise.</aside>
+    </section>
+
+    <section class="slide" data-section="Prompting" data-minutes="1">
+      <p class="kicker">Scope discipline</p>
+      <h2>One turn is not permission<br>to finish the application.</h2>
+      <div class="rule-grid">
+        <article><strong>1</strong><p>One small, independently testable feature.</p></article>
+        <article><strong>≠</strong><p>A full specification is context, not a checklist.</p></article>
+        <article><strong>Δ</strong><p>Prefer the smallest viable diff.</p></article>
+        <article><strong>□</strong><p>Leave adjacent workflows untouched.</p></article>
+      </div>
+      <aside class="notes">This is also enforced in the host policy. Mention it because zero-shotting the whole product destroys the experiment.</aside>
+    </section>
+
+    <section class="slide" data-section="Context" data-minutes="2">
+      <p class="kicker">Legal memory</p>
+      <h2>Make intent discoverable,<br>not hidden.</h2>
+      <div class="split-list context-list">
+        <div><h3>Strong carriers</h3><ul class="yes"><li>Visible labels and behavior</li><li>Meaningful data structures</li><li>Domain-specific function names</li><li>Concise final reply</li></ul></div>
+        <div><h3>Shortcuts</h3><ul class="no"><li>New documentation files</li><li>Full spec in comments</li><li>Invisible DOM or encoded text</li><li>“Implement the next step”</li></ul></div>
+      </div>
+      <aside class="notes">Strong context is part of the product state. Hidden handoff payloads defeat the purpose.</aside>
+    </section>
+
+    <section class="slide" data-section="Drift" data-minutes="2">
+      <p class="kicker">Why drift is plausible</p>
+      <h2>Ambiguous words create<br>adjacent products.</h2>
+      <div class="word-forks">
+        <div><b>request</b><span>application</span><i>or</i><span>order</span></div>
+        <div><b>route</b><span>coordination</span><i>or</i><span>ticketing</span></div>
+        <div><b>availability</b><span>shared capacity</span><i>or</i><span>inventory</span></div>
+        <div><b>score</b><span>human decision support</span><i>or</i><span>automatic rejection</span></div>
+      </div>
+      <p class="statement">The wrong interpretation should be locally reasonable—not random.</p>
+      <aside class="notes">Ask participants not to optimize for sabotage. Honest local decisions are what make the result useful.</aside>
+    </section>
+
+    <section class="slide" data-section="Start" data-minutes="1">
+      <p class="kicker">Join the room</p>
+      <h2>Use one stable nickname.</h2>
+      <div class="join-card">
+        <small>Participant URL</small>
+        <strong id="participantUrl">/</strong>
+        <ol><li>Open the link.</li><li>Enter a nickname you will remember.</li><li>Wait for the moderator to start.</li></ol>
+      </div>
+      <p class="quiet-rule">No product discussions once the relay begins.</p>
+      <aside class="notes">Start from /admin only after everyone who is playing appears in the roster. The roster locks on start.</aside>
+    </section>
+
+    <section class="slide timer-slide" data-section="Round 1" data-minutes="8">
+      <p class="kicker">Round 1 · authors</p>
+      <div class="timer-layout">
+        <div><h2>Build the first<br>small slice.</h2><ul class="clean"><li>Read SPEC-0.</li><li>Implement DELTA-1 only.</li><li>Make product intent visible.</li><li>Do not pre-build future features.</li></ul></div>
+        <div class="round-timer" data-seconds="480"><output>08:00</output><p>Advisory timer</p><div><button data-action="start">Start</button><button data-action="pause">Pause</button><button data-action="reset">Reset</button></div></div>
+      </div>
+      <aside class="notes">8 min. SPEC-0 is an image outside agent context. Authors choose what context to express in their own prompt.</aside>
+    </section>
+
+    <section class="slide timer-slide" data-section="Relay" data-minutes="4">
+      <p class="kicker">Rounds 2–12 · relay</p>
+      <div class="timer-layout">
+        <div><h2>One delta.<br>One fresh agent.</h2><ul class="clean"><li>Read before prompting.</li><li>Recover intent from current state.</li><li>Request one feature only.</li><li>Moderator decides rotation.</li></ul></div>
+        <div class="round-timer" data-seconds="240"><output>04:00</output><p>Prompts remain available at 00:00</p><div><button data-action="start">Start</button><button data-action="pause">Pause</button><button data-action="reset">Reset</button></div></div>
+      </div>
+      <aside class="notes">Repeat for eleven relay rounds. The original author is skipped. With fewer than 12 people, applications make another lap among non-authors.</aside>
+    </section>
+
+    <section class="slide" data-section="Handoff" data-minutes="1">
+      <p class="kicker">Before you pass</p>
+      <h2>Leave evidence,<br>not confidence.</h2>
+      <div class="handoff-check">
+        <label><span>01</span><b>The visible change works.</b></label>
+        <label><span>02</span><b>The application still has a coherent user and purpose.</b></label>
+        <label><span>03</span><b>The final reply names the change and preserved constraint.</b></label>
+        <label><span>04</span><b>Uncertainty is stated instead of invented away.</b></label>
+      </div>
+      <aside class="notes">The code and the latest final reply are the only legal handoff. Participants can prompt again before passing.</aside>
+    </section>
+
+    <section class="slide" data-section="Final round" data-minutes="4">
+      <p class="kicker">After DELTA-12</p>
+      <h2>Describe the product<br>before the reveal.</h2>
+      <div class="interpretation">
+        <p><span>1</span>This application is for…</p>
+        <p><span>2</span>Its primary user is…</p>
+        <p><span>3</span>Its final action causes…</p>
+      </div>
+      <p class="statement">Answer without agent assistance.</p>
+      <aside class="notes">Do not reveal SPEC-0 until the final implementer submits all three fields.</aside>
+    </section>
+
+    <section class="slide" data-section="Reveal" data-minutes="7">
+      <p class="kicker">Original-author review</p>
+      <h2>The application comes home.</h2>
+      <div class="reveal-grid">
+        <div><small>THEN</small><strong>SPEC-0</strong><p>Original identity and invariants.</p></div>
+        <div><small>NOW</small><strong>Final app</strong><p>Behavior after twelve changes.</p></div>
+        <div><small>INFERRED</small><strong>Interpretation</strong><p>What the last person thinks it is.</p></div>
+      </div>
+      <p class="statement">Review. Do not repair.</p>
+      <aside class="notes">Authors receive SPEC-0, all deltas, final app, last reply, and final interpretation.</aside>
+    </section>
+
+    <section class="slide" data-section="Debrief" data-minutes="10">
+      <p class="kicker">Debrief · 10 minutes</p>
+      <h2>Find the first loss of meaning.</h2>
+      <div class="debrief-questions">
+        <article><b>3 min</b><p>When did the application begin to mean something else?</p></article>
+        <article><b>3 min</b><p>What did the author know but fail to preserve?</p></article>
+        <article><b>4 min</b><p>Which durable artifact would have prevented the drift?</p></article>
+      </div>
+      <aside class="notes">Keep this diagnostic, not competitive. Compare inherited errors with errors introduced in the current turn.</aside>
+    </section>
+
+    <section class="slide" data-section="Debrief" data-minutes="2">
+      <p class="kicker">What to inspect</p>
+      <h2>Prompt quality is only<br>one part of the system.</h2>
+      <div class="inspection-grid">
+        <span>product identity</span><span>invariants</span><span>visible behavior</span><span>names & structures</span><span>agent reply</span><span>verification</span>
+      </div>
+      <aside class="notes">Point to the first snapshot where an invariant disappeared. Ask whether it was ever encoded in durable state.</aside>
+    </section>
+
+    <section class="slide finale" data-section="Close" data-minutes="1">
+      <p class="kicker">Context engineering</p>
+      <h2>Design the state<br>that survives the turn.</h2>
+      <div class="final-chain"><span>identity</span><i>→</i><span>invariants</span><i>→</i><span>delta</span><i>→</i><span>state</span><i>→</i><span>verification</span></div>
+      <p class="lead">Better agent work is not just a bigger prompt.<br>It is a better information boundary.</p>
+      <aside class="notes">Final takeaway. Invite participants to name one context artifact they will change in their normal development workflow.</aside>
+    </section>
+  </main>
+
+  <footer class="deck-footer">
+    <button id="previousButton" aria-label="Previous slide">←</button>
+    <span><b id="slideNumber">1</b> / <span id="slideCount">19</span></span>
+    <button id="nextButton" aria-label="Next slide">→</button>
+    <button id="notesButton" title="Toggle presenter notes (N)">Notes</button>
+    <button id="fullscreenButton" title="Fullscreen (F)">Fullscreen</button>
+    <button id="helpButton" title="Keyboard help (?)">?</button>
+  </footer>
+
+  <dialog id="helpDialog">
+    <button id="closeHelp" aria-label="Close">×</button>
+    <h2>Deck controls</h2>
+    <dl><div><dt>← → / Space</dt><dd>Navigate</dd></div><div><dt>F</dt><dd>Fullscreen</dd></div><div><dt>N</dt><dd>Presenter notes</dd></div><div><dt>T</dt><dd>Start or pause visible timer</dd></div><div><dt>Home / End</dt><dd>First or last slide</dd></div></dl>
+  </dialog>
+
+  <script src="/slides/slides.js"></script>
+</body>
+</html>

@@ -90,6 +90,7 @@ class WorkshopHTTPServer(ThreadingHTTPServer):
         self.store = store
         self.service = WorkshopService(settings, store, exercises, runtime)
         self.web_dir = Path(__file__).resolve().parent / "web"
+        self.slides_dir = settings.project_root / "slides"
         super().__init__(address, WorkshopRequestHandler)
 
 
@@ -209,6 +210,29 @@ class WorkshopRequestHandler(BaseHTTPRequestHandler):
                 200,
                 (self.server.web_dir / "admin.html").read_bytes(),
                 "text/html; charset=utf-8",
+                {"Cache-Control": "no-store"},
+            )
+            return
+        if path in {"/slides", "/slides/"}:
+            self._send(
+                200,
+                (self.server.slides_dir / "index.html").read_bytes(),
+                "text/html; charset=utf-8",
+                {"Cache-Control": "no-store"},
+            )
+            return
+        if len(segments) == 2 and segments[0] == "slides":
+            filename = segments[1]
+            media = {
+                "slides.css": "text/css; charset=utf-8",
+                "slides.js": "text/javascript; charset=utf-8",
+            }
+            if filename not in media:
+                raise NotFoundError("Slide asset not found")
+            self._send(
+                200,
+                (self.server.slides_dir / filename).read_bytes(),
+                media[filename],
                 {"Cache-Control": "no-store"},
             )
             return

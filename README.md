@@ -14,6 +14,7 @@ The two workshop entry points are:
 
 - `/` — participant lobby and workspace,
 - `/admin` — protected moderator controls and manual start.
+- `/slides` — facilitator deck with presenter notes and round timers.
 
 Current review set: [Exercise Bank V2 — grounded product concepts](exercises-en-v2/README.md). The previous English set was rejected and is retained only as an archive.
 

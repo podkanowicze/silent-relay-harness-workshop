@@ -120,6 +120,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     runtime = AgentRuntime(settings)
     service = WorkshopService(settings, store, exercises, runtime)
     web_dir = Path(__file__).resolve().parent / "web"
+    slides_dir = settings.project_root / "slides"
 
     app = FastAPI(title="Context Telephone Workshop", version="0.1.0")
     app.state.settings = settings
@@ -180,6 +181,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/admin", include_in_schema=False)
     async def admin_page() -> FileResponse:
         return FileResponse(web_dir / "admin.html")
+
+    @app.get("/slides", include_in_schema=False)
+    @app.get("/slides/", include_in_schema=False)
+    async def slides_page() -> FileResponse:
+        return FileResponse(slides_dir / "index.html", headers={"Cache-Control": "no-store"})
+
+    @app.get("/slides/{filename}", include_in_schema=False)
+    async def slide_asset(filename: str) -> FileResponse:
+        if filename not in {"slides.css", "slides.js"}:
+            raise HTTPException(status_code=404)
+        return FileResponse(slides_dir / filename, headers={"Cache-Control": "no-store"})
 
     @app.get("/assets/{filename}", include_in_schema=False)
     async def asset(filename: str) -> FileResponse:
