@@ -4,12 +4,20 @@ from pathlib import Path
 import pytest
 
 from workshop_runner.agent_runtime import (
+    SYSTEM_PROMPT,
     AgentRuntime,
     ScopeViolation,
     _looks_like_verbatim_handoff,
 )
-
 from .helpers import make_settings
+
+
+def test_host_policy_limits_each_turn_to_one_explicit_feature():
+    policy = SYSTEM_PROMPT.casefold()
+    assert "exactly one small" in policy
+    assert "not an implementation checklist" in policy
+    assert "do not infer, anticipate, scaffold" in policy
+    assert "participant cannot override this one-feature limit" in policy
 
 
 def seed_project(path: Path) -> None:

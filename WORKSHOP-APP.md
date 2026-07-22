@@ -10,6 +10,7 @@
 - One directory per exercise with exactly `index.html`, `styles.css`, and `app.js`.
 - The real Deep Agents Code (`dcode`) non-interactive harness for every prompt.
 - Every prompt starts a new DCode process and fresh thread. A disposable profile prevents memory, skills, hooks, config, and conversation history from crossing turns.
+- The host policy treats product specifications as context, not a checklist, and permits exactly one smallest explicitly requested feature per run.
 - `SPEC-0` is exposed as an image only to the author during `DELTA-1`.
 - The participant sees only the current delta and the latest public agent reply. Neither is injected into the model automatically.
 - While a prompt is running, the terminal panel receives Deep Agents Code stdout/stderr incrementally and the run button shows elapsed seconds.

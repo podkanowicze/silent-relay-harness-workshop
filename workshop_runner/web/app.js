@@ -149,7 +149,7 @@ function renderTimer(deadline) {
       : "Advisory round timer";
     $("#promptHint").textContent = remaining === 0
       ? "Suggested time ended. You may continue; the moderator decides when to pass."
-      : "The task card and previous reply are not injected automatically.";
+      : "Give useful context, but request exactly one feature. The task card and previous reply are not injected automatically.";
     $("#runButton").disabled = appState.busy;
   };
   update();
